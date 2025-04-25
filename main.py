@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from aiogram.types import (
     Message, InlineQuery, InlineQueryResultArticle,
     InlineQueryResultCachedDocument, InlineQueryResultCachedPhoto,
-    CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputTextMessageContent
+    CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputTextMessageContent, BotCommand
 )
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
@@ -407,6 +407,15 @@ async def main():
     dp.message.register(handle_sticker, lambda message: message.sticker is not None)
     dp.inline_query.register(inline_query_handler)
     dp.callback_query.register(callback_query_handler)
+    
+    # Set bot commands for Telegram UI menu
+    await bot.set_my_commands([
+        BotCommand(command="start", description="Start interacting with the bot"),
+        BotCommand(command="tags", description="Show your tags"),
+        BotCommand(command="sticker", description="View your sticker packs"),
+        # Add more as needed
+    ])
+
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
