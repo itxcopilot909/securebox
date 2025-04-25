@@ -15,35 +15,28 @@ from aiogram.fsm.context import FSMContext
 import asyncio
 import math
 from datetime import datetime
-
 from sticker import add_sticker_to_pack, list_sticker_packs
 
-# Bot Token and Mongo URI
 BOT_TOKEN = "7840450226:AAHdODDdoPEihE5cejIkcDVA_YQXs7vj2FY"
 MONGO_URI = "mongodb+srv://itxcriminal:qureshihashmI1@cluster0.jyqy9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-# Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 
-# MongoDB setup
 mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client["file_store_bot"]
 files_collection = db["files"]
 tags_collection = db["tags"]
 
-# Define states for renaming and tagging
 class RenameFile(StatesGroup):
     waiting_for_new_name = State()
 
 class AddTag(StatesGroup):
     waiting_for_tags = State()
 
-# For selecting tags via pagination
 class TagPagination(StatesGroup):
     selecting_tag = State()
 
-# Helper function to format file size
 def format_file_size(size_in_bytes):
     if size_in_bytes is None:
         return "Unknown"
@@ -56,7 +49,6 @@ def format_file_size(size_in_bytes):
     else:
         return f"{size_in_bytes / 1024 ** 3:.2f} GB"
 
-# /start command
 async def start_cmd(message: Message):
     await message.answer(
         "Send me any file (doc, video, image, etc.) and I’ll store it.\n"
@@ -64,7 +56,6 @@ async def start_cmd(message: Message):
         parse_mode="HTML"
     )
 
-# /tags command
 async def tags_cmd(message: Message, state: FSMContext):
     user_id = message.from_user.id
     tags_cursor = tags_collection.find({"user_id": user_id}).sort("created_at", -1)
@@ -106,7 +97,6 @@ async def send_tag_page(message_or_cb, tags, page, state):
             await message_or_cb.message.edit_text(text, reply_markup=markup)
         await message_or_cb.answer()
 
-# Save file and reply with details (including file size and message date)
 async def save_file(message: Message):
     file_id = None
     file_name = "Unnamed"
@@ -187,7 +177,6 @@ async def save_file(message: Message):
                 reply_markup=buttons
             )
 
-# Inline query handler with search functionality
 async def inline_query_handler(inline_query: InlineQuery):
     user_id = inline_query.from_user.id
     query = inline_query.query.lower()
@@ -243,7 +232,6 @@ async def inline_query_handler(inline_query: InlineQuery):
 
     await bot.answer_inline_query(inline_query.id, results=results, cache_time=0)
 
-# Callback query handler (delete + rename + add tag + tags pagination + tag menu)
 async def callback_query_handler(callback_query: CallbackQuery, state: FSMContext):
     data = callback_query.data
     user_id = callback_query.from_user.id
@@ -322,7 +310,6 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         await callback_query.message.edit_text(f"Tag <b>{tag}</b> has been deleted from your files.", parse_mode="HTML")
         await callback_query.answer()
 
-# Rename reply handler
 async def rename_file_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     file_id = data.get("file_id")
@@ -336,7 +323,6 @@ async def rename_file_handler(message: Message, state: FSMContext):
     await message.reply(f"File renamed to: {new_name}")
     await state.clear()
 
-# Tag reply handler
 async def tag_reply_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     file_id = data.get("file_id")
@@ -356,7 +342,6 @@ async def tag_reply_handler(message: Message, state: FSMContext):
     await message.reply(f"Tags added: {', '.join(tags)}")
     await state.clear()
 
-# Rename tag reply handler
 async def rename_tag_reply_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     old_tag = data.get("tag")
@@ -382,15 +367,12 @@ async def rename_tag_reply_handler(message: Message, state: FSMContext):
     await message.reply(f"Tag <b>{old_tag}</b> renamed to <b>{new_tag}</b>.", parse_mode="HTML")
     await state.clear()
 
-# /sticker command
 async def sticker_cmd(message: Message):
     await list_sticker_packs(message, db)
 
-# Sticker message handler
 async def handle_sticker(message: Message):
     await add_sticker_to_pack(message, bot, db)
 
-# Main bot
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.message.register(start_cmd, Command(commands=["start"]))
@@ -404,12 +386,10 @@ async def main():
     dp.inline_query.register(inline_query_handler)
     dp.callback_query.register(callback_query_handler)
     
-    # Set bot commands for Telegram UI menu
     await bot.set_my_commands([
         BotCommand(command="start", description="Start interacting with the bot"),
         BotCommand(command="tags", description="Show your tags"),
         BotCommand(command="sticker", description="View your sticker packs"),
-        # Add more as needed
     ])
 
     await dp.start_polling(bot)
