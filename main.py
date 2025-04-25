@@ -19,7 +19,7 @@ from datetime import datetime
 from sticker import add_sticker_to_pack, list_sticker_packs
 
 # Bot Token and Mongo URI
-BOT_TOKEN = "6469497752:AAH1V_At-4f56MAziV-VuoPqFXlk1IT0TF8"
+BOT_TOKEN = "7840450226:AAHdODDdoPEihE5cejIkcDVA_YQXs7vj2FY"
 MONGO_URI = "mongodb+srv://itxcriminal:qureshihashmI1@cluster0.jyqy9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 # Initialize bot and dispatcher
