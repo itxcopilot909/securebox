@@ -17,7 +17,7 @@ import math
 from datetime import datetime
 from sticker import add_sticker_to_pack, list_sticker_packs
 
-BOT_TOKEN = "7840450226:AAHdODDdoPEihE5cejIkcDVA_YQXs7vj2FY"
+BOT_TOKEN = "7620694109:AAGwMTjQTnjFC1T7LG25_cLSuR4JB0knscg"
 MONGO_URI = "mongodb+srv://itxcriminal:qureshihashmI1@cluster0.jyqy9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
