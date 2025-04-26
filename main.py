@@ -65,7 +65,7 @@ def format_file_size(size_in_bytes):
 async def start_cmd(message: Message):
     await message.answer(
         "Send me any file (doc, video, image, etc.) and I’ll store it.\n"
-        "You can access them inline by typing <code>@whatsisbot</code> in any chat.\n",
+        "You can access them inline by typing <code>@SecureBoxbot</code> in any chat.\n",
         parse_mode="HTML"
     )
 
