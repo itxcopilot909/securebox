@@ -63,10 +63,16 @@ def format_file_size(size_in_bytes):
         return f"{size_in_bytes / 1024 ** 3:.2f} GB"
 
 async def start_cmd(message: Message):
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Explore", switch_inline_query_current_chat="")]
+        ]
+    )
     await message.answer(
         "Send me any file (doc, video, image, etc.) and I’ll store it.\n"
         "You can access them inline by typing <code>@SecureBoxbot</code> in any chat.\n",
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=markup
     )
 
 async def tags_cmd(message: Message, state: FSMContext):
@@ -216,13 +222,6 @@ async def inline_query_handler(inline_query: InlineQuery):
             file_id = f.get("file_id")
             title = f.get("file_name")
             description = f"Type: {file_type.capitalize()} | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}"
-            caption = (
-                f"File Name: {title}\n"
-                f"File Type: {file_type}\n"
-                f"File Size: {file_size_str}\n"
-                f"Date: {message_date_str}\n"
-                f"Tags: {tags_str}"
-            )
 
             try:
                 if file_type == "photo":
@@ -240,8 +239,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                             id=str(f["_id"]),
                             title=title,
                             video_file_id=file_id,
-                            description=description,
-                            caption=caption
+                            description=description
                         )
                     )
                 elif file_type == "audio":
@@ -249,8 +247,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                         InlineQueryResultCachedAudio(
                             id=str(f["_id"]),
                             title=title,
-                            audio_file_id=file_id,
-                            caption=caption
+                            audio_file_id=file_id
                         )
                     )
                 elif file_type == "voice":
@@ -258,8 +255,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                         InlineQueryResultCachedVoice(
                             id=str(f["_id"]),
                             title=title,
-                            voice_file_id=file_id,
-                            caption=caption
+                            voice_file_id=file_id
                         )
                     )
                 elif file_type == "sticker":
@@ -275,8 +271,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                             id=str(f["_id"]),
                             title=title,
                             document_file_id=file_id,
-                            description=description,
-                            caption=caption
+                            description=description
                         )
                     )
                 else:
@@ -286,7 +281,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                             id=str(f["_id"]),
                             title=title,
                             input_message_content=InputTextMessageContent(
-                                message_text=caption
+                                message_text=title
                             ),
                             description=description
                         )
@@ -298,7 +293,7 @@ async def inline_query_handler(inline_query: InlineQuery):
                         id=str(f["_id"]),
                         title=title,
                         input_message_content=InputTextMessageContent(
-                            message_text=f"[Error sending file]\n\n{caption}"
+                            message_text=f"[Error sending file]\n\n{title}"
                         ),
                         description=description
                     )
