@@ -2,22 +2,9 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import (
-    Message,
-    InlineQuery,
-    InlineQueryResultArticle,
-    InlineQueryResultCachedAudio,
-    InlineQueryResultCachedDocument,
-    InlineQueryResultCachedGif,
-    InlineQueryResultCachedMpeg4Gif,
-    InlineQueryResultCachedPhoto,
-    InlineQueryResultCachedSticker,
-    InlineQueryResultCachedVideo,
-    InlineQueryResultCachedVoice,
-    CallbackQuery,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    InputTextMessageContent,
-    BotCommand
+    Message, InlineQuery, InlineQueryResultArticle,
+    InlineQueryResultCachedDocument, InlineQueryResultCachedPhoto,
+    CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputTextMessageContent, BotCommand
 )
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
@@ -212,95 +199,34 @@ async def inline_query_handler(inline_query: InlineQuery):
             message_date_str = "Unknown"
 
         if query in f["file_name"].lower() or any(query in tag.lower() for tag in tags):
-            file_type = f.get("file_type")
-            file_id = f.get("file_id")
-            title = f.get("file_name")
-            description = f"Type: {file_type.capitalize()} | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}"
-            caption = (
-                f"File Name: {title}\n"
-                f"File Type: {file_type}\n"
-                f"File Size: {file_size_str}\n"
-                f"Date: {message_date_str}\n"
-                f"Tags: {tags_str}"
-            )
-
-            try:
-                if file_type == "photo":
-                    results.append(
-                        InlineQueryResultCachedPhoto(
-                            id=str(f["_id"]),
-                            title=title,
-                            photo_file_id=file_id,
-                            description=description
-                        )
+            if f["file_type"] == "photo":
+                results.append(
+                    InlineQueryResultCachedPhoto(
+                        id=str(f["_id"]),
+                        title=f["file_name"],
+                        photo_file_id=f["file_id"],
+                        description=f"Type: Photo | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}"
                     )
-                elif file_type == "video":
-                    results.append(
-                        InlineQueryResultCachedVideo(
-                            id=str(f["_id"]),
-                            title=title,
-                            video_file_id=file_id,
-                            description=description,
-                            caption=caption
-                        )
+                )
+            elif f["file_type"] == "video":
+                results.append(
+                    InlineQueryResultCachedDocument(
+                        id=str(f["_id"]),
+                        title=f["file_name"],
+                        document_file_id=f["file_id"],
+                        description=f"Type: Video | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}",
+                        caption=f"File Name: {f['file_name']}\nFile Type: Video\nFile Size: {file_size_str}\nDate: {message_date_str}\nTags: {tags_str}"
                     )
-                elif file_type == "audio":
-                    results.append(
-                        InlineQueryResultCachedAudio(
-                            id=str(f["_id"]),
-                            title=title,
-                            audio_file_id=file_id,
-                            caption=caption
-                        )
-                    )
-                elif file_type == "voice":
-                    results.append(
-                        InlineQueryResultCachedVoice(
-                            id=str(f["_id"]),
-                            title=title,
-                            voice_file_id=file_id,
-                            caption=caption
-                        )
-                    )
-                elif file_type == "sticker":
-                    results.append(
-                        InlineQueryResultCachedSticker(
-                            id=str(f["_id"]),
-                            sticker_file_id=file_id
-                        )
-                    )
-                elif file_type == "document" or file_type == "video_note":
-                    results.append(
-                        InlineQueryResultCachedDocument(
-                            id=str(f["_id"]),
-                            title=title,
-                            document_file_id=file_id,
-                            description=description,
-                            caption=caption
-                        )
-                    )
-                else:
-                    # fallback: unknown types → simple text article
-                    results.append(
-                        InlineQueryResultArticle(
-                            id=str(f["_id"]),
-                            title=title,
-                            input_message_content=InputTextMessageContent(
-                                message_text=caption
-                            ),
-                            description=description
-                        )
-                    )
-            except Exception as e:
-                # Fallback safety: if any error (like bad file_id), send as text article
+                )
+            else:
                 results.append(
                     InlineQueryResultArticle(
                         id=str(f["_id"]),
-                        title=title,
+                        title=f["file_name"],
                         input_message_content=InputTextMessageContent(
-                            message_text=f"[Error sending file]\n\n{caption}"
+                            message_text=f"File Name: {f['file_name']}\nFile Type: {f['file_type']}\nFile Size: {file_size_str}\nFile ID: {f['file_id']}\nDate: {message_date_str}\nTags: {tags_str}"
                         ),
-                        description=description
+                        description=f"Type: {f['file_type']} | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}"
                     )
                 )
 
