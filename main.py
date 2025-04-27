@@ -69,8 +69,7 @@ async def start_cmd(message: Message):
         ]
     )
     await message.answer(
-        "Send me any file (doc, video, image, etc.) and I’ll store it.\n"
-        "You can access them inline by typing <code>@SecureBoxbot</code> in any chat.\n",
+        "Send me any file (doc, video, image, etc.) and I’ll store it.\n",
         parse_mode="HTML",
         reply_markup=markup
     )
