@@ -220,7 +220,7 @@ async def inline_query_handler(inline_query: InlineQuery):
             file_type = f.get("file_type")
             file_id = f.get("file_id")
             title = f.get("file_name")
-            description = f"Type: {file_type.capitalize()} | Size: {file_size_str} | Date: {message_date_str} | Tags: {tags_str}"
+            description = f"{file_type.capitalize()} | {file_size_str} | {message_date_str} | {tags_str}"
 
             try:
                 if file_type == "photo":
