@@ -83,7 +83,7 @@ async def add_sticker_to_pack(message: Message, bot: Bot, db):
         "sticker_type": sticker_type
     })
     if exists:
-        await message.reply("This sticker is already in your pack. Duplicate skipped.")
+        await message.reply("This sticker is already in your pack.")
         return
 
     pack_doc = await packs_collection.find_one(
