@@ -4,7 +4,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, I
 from aiogram.exceptions import TelegramAPIError
 from datetime import datetime
 
-PACK_SUFFIX = "_by_securebox"  # Change to your bot's username if needed
+PACK_SUFFIX = "_by_secureboxbot"  # Change to your bot's username if needed
 
 def get_sticker_type(sticker):
     if getattr(sticker, 'is_video', False):
