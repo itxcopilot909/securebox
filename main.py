@@ -1,4 +1,6 @@
 import logging
+import os
+import subprocess
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import (
@@ -17,7 +19,8 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InputTextMessageContent,
-    BotCommand
+    BotCommand,
+    FSInputFile,
 )
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
@@ -30,7 +33,7 @@ import math
 from datetime import datetime
 from sticker import add_sticker_to_pack, list_sticker_packs
 
-BOT_TOKEN = "7620694109:AAGwMTjQTnjFC1T7LG25_cLSuR4JB0knscg"
+BOT_TOKEN = "7610586859:AAFsDXtdd_rksn9QLLHm3n4GeMqsTgFDBKU"
 MONGO_URI = "mongodb+srv://itxcriminal:qureshihashmI1@cluster0.jyqy9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -85,7 +88,6 @@ async def tags_cmd(message: Message, state: FSMContext):
 
 async def send_tag_page(message_or_cb, tags, page, state):
     TAGS_PER_PAGE = 10
-    ROWS = 5
     COLS = 2
     total_tags = len(tags)
     start = page * TAGS_PER_PAGE
@@ -162,6 +164,10 @@ async def save_file(message: Message):
                 [InlineKeyboardButton(text="Delete", callback_data=f"delete:{mongo_id}")],
                 [InlineKeyboardButton(text="Add Tag", callback_data=f"addtag:{mongo_id}")]
             ])
+            if existing_file.get("file_type") == "video":
+                buttons.inline_keyboard.append(
+                    [InlineKeyboardButton(text="Convert to Video Note", callback_data=f"convert_video_note:{mongo_id}")]
+                )
             await message.reply(
                 "This file is already saved in your storage.\n"
                 f"File Name: {existing_file['file_name']}\n"
@@ -186,6 +192,10 @@ async def save_file(message: Message):
                 [InlineKeyboardButton(text="Delete", callback_data=f"delete:{mongo_id}")],
                 [InlineKeyboardButton(text="Add Tag", callback_data=f"addtag:{mongo_id}")]
             ])
+            if file_type == "video":
+                buttons.inline_keyboard.append(
+                    [InlineKeyboardButton(text="Convert to Video Note", callback_data=f"convert_video_note:{mongo_id}")]
+                )
             await message.reply(
                 "File saved successfully!\n"
                 f"File Name: {file_name}\n"
@@ -377,6 +387,94 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         await tags_collection.delete_one({"user_id": user_id, "tag": tag})
         await callback_query.message.edit_text(f"Tag <b>{tag}</b> has been deleted from your files.", parse_mode="HTML")
         await callback_query.answer()
+
+    elif data.startswith("convert_video_note:"):
+        file_id = data.split(":", 1)[1]
+        file_doc = await files_collection.find_one({"_id": ObjectId(file_id)})
+        if not file_doc:
+            await callback_query.answer("File not found.", show_alert=True)
+            return
+        tg_file_id = file_doc.get("file_id")
+        message = callback_query.message  # The message with the button!
+        keyboard = message.reply_markup
+
+        def make_bar(pct):
+            bars = int(pct // 10)
+            return f"[{'█'*bars}{'░'*(10-bars)}] {pct}%"
+
+        try:
+            # Step 0: Edit original message to add progress bar
+            await bot.edit_message_text(
+                text=message.html_text + f"\n\n⏳ <b>Progress</b>:\n{make_bar(0)}",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            telegram_file = await bot.get_file(tg_file_id)
+            await bot.edit_message_text(
+                text=message.html_text + f"\n\n⏳ <b>Progress</b>:\n{make_bar(20)} (Downloading...)",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            file_path = telegram_file.file_path
+            file_bytes = await bot.download_file(file_path)
+            input_path = f"/tmp/{tg_file_id}.mp4"
+            output_path = f"/tmp/{tg_file_id}_circle.mp4"
+            with open(input_path, "wb") as f:
+                f.write(file_bytes.getvalue())
+            await bot.edit_message_text(
+                text=message.html_text + f"\n\n⏳ <b>Progress</b>:\n{make_bar(50)} (Processing...)",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            ffmpeg_cmd = [
+                "ffmpeg", "-y",
+                "-i", input_path,
+                "-vf", "crop=min(iw\\,ih):min(iw\\,ih),scale=512:512",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "28",
+                "-an", output_path
+            ]
+            subprocess.run(ffmpeg_cmd, check=True)
+            await bot.edit_message_text(
+                text=message.html_text + f"\n\n⏳ <b>Progress</b>:\n{make_bar(80)} (Uploading...)",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            await bot.send_video_note(
+                chat_id=message.chat.id,
+                video_note=FSInputFile(output_path, filename="video_note.mp4"),
+                length=512
+            )
+            await bot.edit_message_text(
+                text=message.html_text + f"\n\n✅ <b>Done!</b> Your circle video note is ready.\n{make_bar(100)}",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            await callback_query.answer("Video note sent!", show_alert=True)
+            try:
+                os.remove(input_path)
+                os.remove(output_path)
+            except Exception:
+                pass
+        except Exception as e:
+            logging.exception("Failed to send video note")
+            await bot.edit_message_text(
+                text=message.html_text + "\n\n❌ Failed to convert or send video note.",
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            await callback_query.answer("Failed to convert or send video note.", show_alert=True)
 
 async def rename_file_handler(message: Message, state: FSMContext):
     data = await state.get_data()
