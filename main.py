@@ -169,12 +169,13 @@ async def save_file(message: Message):
                     [InlineKeyboardButton(text="Convert to Video Note", callback_data=f"convert_video_note:{mongo_id}")]
                 )
             await message.reply(
-                "This file is already saved in your storage.\n"
-                f"File Name: {existing_file['file_name']}\n"
-                f"File Type: {existing_file['file_type']}\n"
-                f"File Size: {format_file_size(existing_file.get('file_size', 0))}\n"
-                f"Message Date: {message_date}",
-                reply_markup=buttons
+                "<b>This file is already saved in your storage.</b>\n"
+                f"<b>File Name:</b> {existing_file['file_name']}\n"
+                f"<b>File Type:</b> {existing_file['file_type']}\n"
+                f"<b>File Size:</b> {format_file_size(existing_file.get('file_size', 0))}\n"
+                f"<b>Message Date:</b> {message_date}",
+                reply_markup=buttons,
+                parse_mode="HTML"
             )
         else:
             result = await files_collection.insert_one({
@@ -197,12 +198,13 @@ async def save_file(message: Message):
                     [InlineKeyboardButton(text="Convert to Video Note", callback_data=f"convert_video_note:{mongo_id}")]
                 )
             await message.reply(
-                "File saved successfully!\n"
-                f"File Name: {file_name}\n"
-                f"File Type: {file_type}\n"
-                f"File Size: {format_file_size(file_size)}\n"
-                f"Message Date: {message_date}",
-                reply_markup=buttons
+                "<b>File saved successfully!</b>\n"
+                f"<b>File Name:</b> {file_name}\n"
+                f"<b>File Type:</b> {file_type}\n"
+                f"<b>File Size:</b> {format_file_size(file_size)}\n"
+                f"<b>Message Date:</b> {message_date}",
+                reply_markup=buttons,
+                parse_mode="HTML"
             )
 
 async def inline_query_handler(inline_query: InlineQuery):
@@ -230,7 +232,13 @@ async def inline_query_handler(inline_query: InlineQuery):
             file_type = f.get("file_type")
             file_id = f.get("file_id")
             title = f.get("file_name")
-            description = f"{file_type.capitalize()} | {file_size_str} | {message_date_str} | {tags_str}"
+            # No bold styling for inline result!
+            description = (
+                f"Type: {file_type.capitalize()} | "
+                f"Size: {file_size_str} | "
+                f"Date: {message_date_str} | "
+                f"Tags: {tags_str}"
+            )
 
             try:
                 if file_type == "photo":
@@ -321,7 +329,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
             result = await files_collection.delete_one({"_id": object_id})
             if result.deleted_count > 0:
                 if callback_query.message:
-                    await callback_query.message.edit_text("The file has been deleted successfully.")
+                    await callback_query.message.edit_text("<b>The file has been deleted successfully.</b>", parse_mode="HTML")
                 else:
                     await callback_query.answer("The file has been deleted successfully.", show_alert=True)
             else:
@@ -335,7 +343,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         await state.set_state(RenameFile.waiting_for_new_name)
         await state.update_data(file_id=file_id)
         try:
-            await callback_query.message.reply("Please send the new name for the file:")
+            await callback_query.message.reply("<b>Please send the new name for the file:</b>", parse_mode="HTML")
         except:
             pass
         await callback_query.answer("Please send the new name in this chat.", show_alert=True)
@@ -345,7 +353,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         await state.set_state(AddTag.waiting_for_tags)
         await state.update_data(file_id=file_id)
         try:
-            await callback_query.message.reply("Please send the tag(s) for the file (comma-separated for multiple tags):")
+            await callback_query.message.reply("<b>Please send the tag(s) for the file (comma-separated for multiple tags):</b>", parse_mode="HTML")
         except:
             pass
         await callback_query.answer("Please send the tag(s) in this chat.", show_alert=True)
@@ -375,7 +383,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         tag = data.split(":", 1)[1]
         await state.set_state(TagPagination.selecting_tag)
         await state.update_data(tag=tag)
-        await callback_query.message.reply(f"Send the new name for the tag <b>{tag}</b>:", parse_mode="HTML")
+        await callback_query.message.reply(f"<b>Send the new name for the tag</b> <b>{tag}</b>:", parse_mode="HTML")
         await callback_query.answer()
 
     elif data.startswith("delete_tag_menu:"):
@@ -385,7 +393,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
             {"$pull": {"tags": tag}}
         )
         await tags_collection.delete_one({"user_id": user_id, "tag": tag})
-        await callback_query.message.edit_text(f"Tag <b>{tag}</b> has been deleted from your files.", parse_mode="HTML")
+        await callback_query.message.edit_text(f"<b>Tag {tag} has been deleted from your files.</b>", parse_mode="HTML")
         await callback_query.answer()
 
     elif data.startswith("convert_video_note:"):
@@ -468,7 +476,7 @@ async def callback_query_handler(callback_query: CallbackQuery, state: FSMContex
         except Exception as e:
             logging.exception("Failed to send video note")
             await bot.edit_message_text(
-                text=message.html_text + "\n\n❌ Failed to convert or send video note.",
+                text=message.html_text + "\n\n❌ <b>Failed to convert or send video note.</b>",
                 chat_id=message.chat.id,
                 message_id=message.message_id,
                 reply_markup=keyboard,
@@ -480,20 +488,20 @@ async def rename_file_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     file_id = data.get("file_id")
     if not file_id:
-        await message.reply("Something went wrong. Try again.")
+        await message.reply("<b>Something went wrong. Try again.</b>", parse_mode="HTML")
         return
 
     new_name = message.text
     object_id = ObjectId(file_id)
     await files_collection.update_one({"_id": object_id}, {"$set": {"file_name": new_name}})
-    await message.reply(f"File renamed to: {new_name}")
+    await message.reply(f"<b>File renamed to:</b> {new_name}", parse_mode="HTML")
     await state.clear()
 
 async def tag_reply_handler(message: Message, state: FSMContext):
     data = await state.get_data()
     file_id = data.get("file_id")
     if not file_id:
-        await message.reply("Something went wrong. Try again.")
+        await message.reply("<b>Something went wrong. Try again.</b>", parse_mode="HTML")
         return
 
     tags = [tag.strip() for tag in message.text.split(",")]
@@ -505,7 +513,7 @@ async def tag_reply_handler(message: Message, state: FSMContext):
             {"$setOnInsert": {"created_at": datetime.utcnow()}},
             upsert=True
         )
-    await message.reply(f"Tags added: {', '.join(tags)}")
+    await message.reply(f"<b>Tags added:</b> {', '.join(tags)}", parse_mode="HTML")
     await state.clear()
 
 async def rename_tag_reply_handler(message: Message, state: FSMContext):
@@ -514,7 +522,7 @@ async def rename_tag_reply_handler(message: Message, state: FSMContext):
     user_id = message.from_user.id
     new_tag = message.text.strip()
     if not old_tag or not new_tag:
-        await message.reply("Something went wrong. Try again.")
+        await message.reply("<b>Something went wrong. Try again.</b>", parse_mode="HTML")
         return
     await files_collection.update_many(
         {"user_id": user_id, "tags": old_tag},
@@ -530,7 +538,7 @@ async def rename_tag_reply_handler(message: Message, state: FSMContext):
             {"$setOnInsert": {"created_at": created_at}},
             upsert=True
         )
-    await message.reply(f"Tag <b>{old_tag}</b> renamed to <b>{new_tag}</b>.", parse_mode="HTML")
+    await message.reply(f"<b>Tag</b> <b>{old_tag}</b> <b>renamed to</b> <b>{new_tag}</b>.", parse_mode="HTML")
     await state.clear()
 
 async def sticker_cmd(message: Message):
