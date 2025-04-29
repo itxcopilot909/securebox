@@ -33,7 +33,7 @@ import math
 from datetime import datetime
 from sticker import add_sticker_to_pack, list_sticker_packs
 
-BOT_TOKEN = "7610586859:AAFsDXtdd_rksn9QLLHm3n4GeMqsTgFDBKU"
+BOT_TOKEN = "7620694109:AAGwMTjQTnjFC1T7LG25_cLSuR4JB0knscg"
 MONGO_URI = "mongodb+srv://itxcriminal:qureshihashmI1@cluster0.jyqy9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -232,12 +232,11 @@ async def inline_query_handler(inline_query: InlineQuery):
             file_type = f.get("file_type")
             file_id = f.get("file_id")
             title = f.get("file_name")
-            # No bold styling for inline result!
             description = (
-                f"Type: {file_type.capitalize()} | "
-                f"Size: {file_size_str} | "
-                f"Date: {message_date_str} | "
-                f"Tags: {tags_str}"
+                f"{file_type.capitalize()} | "
+                f"{file_size_str} | "
+                f"{message_date_str} | "
+                f"{tags_str}"
             )
 
             try:
